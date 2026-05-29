@@ -1,13 +1,15 @@
 from escpos import *
 import datetime
+import random
 
 LINE_WIDTH=32 # mode 0 default
+BAC_THRESH=0.003
 granted="""       ╔═══════════════╗
        ║ Entry Granted ║
        ╚═══════════════╝"""
-denied="""         ╔════════════╗
-         ║Entry Denied║
-         ╚════════════╝"""
+denied="""        ╔══════════════╗
+        ║ Entry Denied ║
+        ╚══════════════╝"""
 
 def centerText(txt: str) -> str:
 	if len(txt) > LINE_WIDTH:
@@ -31,18 +33,21 @@ def lrText(l: str, r: str) -> str:
 	rem = LINE_WIDTH - (len(l) + len(r))
 	return l+(rem*" ")+r
 
-p = printer.Serial(devfile="/dev/ttyUSB0", baudrate=9600, bytesize=8, parity=None, stopbits=2, dsrdtr=False, profile="simple")
-p.text('\x00'*50) # this particular printer needs to be woken up
-p.text("\n")
-p.text('\x00'*50)
-#p.text("greetings, earthling\n")
-p.image("/home/philo/Downloads/logo.png", high_density_vertical=True, high_density_horizontal=False, impl="bitImageColumn")
-#p.set(align="center")
-p.textln(centerText("CERTIFICATE OF BAC"))
-now = datetime.datetime.now()
-p.textln(lrText("Date:", str(now.day)+"."+str(now.month)+"."+str(now.year)))
-p.textln(lrText("Time:", str(now.hour)+":"+str(now.minute)))
-p.textln(lrText("BAC:", "0.123"))
-p.textln(lrText("MICROPLASTICS:", "666"))
-p.textln(rightText("nanostone/stone"))
-p.textln(granted)
+def bacReport(bac: float) -> None:
+	p = printer.Serial(devfile="/dev/ttyUSB0", baudrate=9600, bytesize=8, parity=None, stopbits=2, dsrdtr=False, profile="simple")
+	p.text('\x00'*50) # this particular printer needs to be woken up
+	p.text("\n")
+	p.text('\x00'*50)
+	p.image("logo.png", high_density_vertical=True, high_density_horizontal=False, impl="bitImageColumn")
+	#p.set(align="center")
+	p.textln(centerText("CERTIFICATE OF BAC"))
+	now = datetime.datetime.now()
+	p.textln(lrText("Date:", str(now.day)+"."+str(now.month)+"."+str(now.year)))
+	p.textln(lrText("Time:", str(now.hour)+":"+str(now.minute)))
+	p.textln(lrText("BAC:", str(bac)))
+	p.textln(lrText("MICROPLASTICS:", str(random.randrange(300,900))))
+	p.textln(rightText("nanostone/stone"))
+	if bac >= BAC_THRESH:
+		p.textln(granted)
+	else:
+		p.textln(denied)
